@@ -255,6 +255,49 @@
         font-size: 1rem;
       }
 
+      .facts-panel {
+        display: grid;
+        gap: 14px;
+        margin: 0 0 20px;
+        padding: 16px;
+        background: #fffaf0;
+        border: 1px solid #ead8a8;
+        border-radius: 8px;
+      }
+
+      .facts-panel h3 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .fact-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .fact {
+        display: grid;
+        gap: 7px;
+      }
+
+      .fact input[type="number"] {
+        width: 100%;
+        min-width: 0;
+        padding: 11px 12px;
+        color: var(--ink);
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .calculated-label {
+        color: var(--green);
+        font-size: 0.76rem;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
       .preset-slider {
         display: grid;
         grid-template-columns: 1fr auto;
@@ -570,6 +613,10 @@
         .bar-row {
           grid-template-columns: 88px 1fr 34px;
         }
+
+        .fact-grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -625,7 +672,12 @@
             <div class="metrics" id="conditionMetrics"></div>
           </div>
 
-          <div class="metrics" id="metrics"></div>
+          <div class="facts-panel">
+            <h3>Hospital facts</h3>
+            <label for="hospitalSelect">Care site</label>
+            <select id="hospitalSelect"></select>
+            <div class="fact-grid" id="factInputs"></div>
+          </div>
 
           <div class="controls">
             <button class="primary-btn" id="runBtn" type="button">Run Agents</button>
@@ -644,7 +696,7 @@
             <div class="run-state" id="runState">Waiting</div>
           </div>
           <div class="timeline" id="timeline">
-            <div class="empty-state">Describe the crisis, set the sliders, then run ReLoad.</div>
+            <div class="empty-state">Describe the crisis, enter the facts, then run ReLoad.</div>
           </div>
         </div>
 
@@ -701,6 +753,54 @@
         accessGap: 70,
         misinformation: 55,
         staffGap: 40,
+      };
+
+      const hospitals = {
+        "Brampton Civic Hospital": {
+          erCapacity: 120,
+          erCurrent: 145,
+          bedCapacity: 608,
+          bedsOccupied: 575,
+          staffNeeded: 190,
+          staffAvailable: 150,
+          routesOpen: 7,
+          routesTotal: 10,
+          rumorReports: 55,
+        },
+        "Peel Memorial Urgent Care Centre": {
+          erCapacity: 70,
+          erCurrent: 82,
+          bedCapacity: 0,
+          bedsOccupied: 0,
+          staffNeeded: 70,
+          staffAvailable: 58,
+          routesOpen: 8,
+          routesTotal: 10,
+          rumorReports: 40,
+        },
+        "Etobicoke General Hospital": {
+          erCapacity: 95,
+          erCurrent: 78,
+          bedCapacity: 300,
+          bedsOccupied: 245,
+          staffNeeded: 135,
+          staffAvailable: 118,
+          routesOpen: 9,
+          routesTotal: 10,
+          rumorReports: 35,
+        },
+      };
+
+      const factInfo = {
+        erCapacity: "ER safe capacity",
+        erCurrent: "People currently in ER",
+        bedCapacity: "Total inpatient beds",
+        bedsOccupied: "Occupied inpatient beds",
+        staffNeeded: "Staff needed this shift",
+        staffAvailable: "Staff available now",
+        routesOpen: "Major routes still open",
+        routesTotal: "Major routes total",
+        rumorReports: "False info reports",
       };
 
       const conditionPresets = {
@@ -771,13 +871,16 @@
       };
 
       const state = {
+        hospitalName: "Brampton Civic Hospital",
+        facts: { ...hospitals["Brampton Civic Hospital"] },
         metrics: { ...defaultMetrics },
         conditionPreset: "Balanced surge",
         condition: { ...conditionPresets["Balanced surge"] },
         running: false,
       };
 
-      const metricsEl = document.getElementById("metrics");
+      const hospitalSelectEl = document.getElementById("hospitalSelect");
+      const factInputsEl = document.getElementById("factInputs");
       const conditionPresetEl = document.getElementById("conditionPreset");
       const conditionPresetNameEl = document.getElementById("conditionPresetName");
       const conditionMetricsEl = document.getElementById("conditionMetrics");
@@ -797,6 +900,26 @@
 
       function clamp(value) {
         return Math.max(0, Math.min(100, Math.round(value)));
+      }
+
+      function percent(part, total) {
+        if (!total || total <= 0) return 0;
+        return (part / total) * 100;
+      }
+
+      function metricsFromFacts(facts) {
+        const erLoad = percent(facts.erCurrent, facts.erCapacity);
+        const bedLoad = facts.bedCapacity > 0 ? percent(facts.bedsOccupied, facts.bedCapacity) : 35;
+        const staffShortage = percent(Math.max(0, facts.staffNeeded - facts.staffAvailable), facts.staffNeeded);
+        const routeClosed = percent(Math.max(0, facts.routesTotal - facts.routesOpen), facts.routesTotal);
+
+        return {
+          erPressure: clamp((erLoad - 70) * 2.2),
+          bedBlock: clamp((bedLoad - 72) * 2.4),
+          accessGap: clamp(routeClosed * 1.6),
+          misinformation: clamp(facts.rumorReports),
+          staffGap: clamp(staffShortage * 2.1),
+        };
       }
 
       function conditionRiskBoost(condition = state.condition) {
@@ -849,14 +972,18 @@
       function plannerAgent(issue, metrics) {
         const actions = [];
         const ranked = rankedPressureKeys(metrics, issue);
+        const lower = issue.toLowerCase();
 
         ranked.forEach((key) => {
-          if (key === "erPressure" && metrics.erPressure >= 45) actions.push("Open a mobile triage clinic beside the ER");
+          if (key === "erPressure" && metrics.erPressure >= 45) actions.push("Move low-acuity patients to Peel Memorial Urgent Care and partner clinics");
           if (key === "bedBlock" && metrics.bedBlock >= 45) actions.push("Move stable patients to a discharge lounge and free bed space");
-          if (key === "accessGap" && metrics.accessGap >= 45) actions.push("Send community volunteers to high-need neighbourhoods");
+          if (key === "accessGap" && metrics.accessGap >= 45) actions.push("Send clear route updates and shuttle support to affected neighbourhoods");
           if (key === "misinformation" && metrics.misinformation >= 35) actions.push("Send clear multilingual updates through trusted local channels");
           if (key === "staffGap" && metrics.staffGap >= 45) actions.push("Switch to a simpler paper backup workflow and reserve staff for severe cases");
         });
+        if (/broken|fracture|bone|cast|sprain|injur/i.test(lower)) {
+          actions.unshift("Have the clinical team provide pain control, temporary splints, and transfer stable fracture cases to a lower-pressure site");
+        }
         if (actions.length < 3) actions.push("Redirect low-risk patients to clinics and virtual nurse lines");
 
         return [...new Set(actions)].slice(0, 4);
@@ -864,7 +991,7 @@
 
       const repairActions = {
         erPressure: [
-          "Set up an outdoor triage desk before patients enter the ER",
+          "Run a nurse-led triage desk inside the ER entrance",
           "Redirect low-risk patients to partner clinics with same-day slots",
           "Add a nurse phone line to stop mild cases from coming to the ER",
           "Create a separate ambulance offload lane for severe cases",
@@ -876,7 +1003,7 @@
           "Use short-stay observation beds for patients who do not need admission",
         ],
         accessGap: [
-          "Open a school gym care site closer to the hardest-hit neighbourhood",
+          "Use Peel Memorial Urgent Care for non-life-threatening cases",
           "Send shuttle vans to neighbourhoods with poor transit access",
           "Place volunteers at libraries, schools, and community centres",
           "Move mobile care teams to the postal codes reporting the longest travel barriers",
@@ -900,9 +1027,9 @@
         const ranked = rankedPressureKeys(metrics, issue);
         const biggest = ranked[0];
         const coverage = {
-          erPressure: plan.some((item) => /triage|Redirect low-risk|phone line|ambulance/i.test(item)),
+          erPressure: plan.some((item) => /triage|Redirect low-risk|phone line|ambulance|Urgent Care|partner clinics|lower-pressure/i.test(item)),
           bedBlock: plan.some((item) => /discharge|bed huddle|observation/i.test(item)),
-          accessGap: plan.some((item) => /volunteer|school gym|shuttle|mobile care|neighbourhood/i.test(item)),
+          accessGap: plan.some((item) => /volunteer|Urgent Care|shuttle|route updates|neighbourhood|postal codes/i.test(item)),
           misinformation: plan.some((item) => /multilingual|trusted|rumor|faith|care map|alert/i.test(item)),
           staffGap: plan.some((item) => /paper|staff|rotations|volunteers|non-urgent/i.test(item)),
         };
@@ -1047,32 +1174,41 @@
         next[mutation.key] = clamp(next[mutation.key] + mutation.amount);
 
         plan.forEach((action) => {
-          if (/mobile triage|outdoor triage|Redirect low-risk|phone line|ambulance/i.test(action)) next.erPressure = clamp(next.erPressure - 14);
+          if (/triage|Redirect low-risk|phone line|ambulance|Urgent Care|partner clinics|lower-pressure/i.test(action)) next.erPressure = clamp(next.erPressure - 14);
           if (/discharge|bed huddles|observation|bed space/i.test(action)) next.bedBlock = clamp(next.bedBlock - 14);
-          if (/community volunteers|school gym|shuttle|mobile care|neighbourhoods/i.test(action)) next.accessGap = clamp(next.accessGap - 12);
+          if (/community volunteers|Urgent Care|shuttle|route updates|neighbourhoods|postal codes/i.test(action)) next.accessGap = clamp(next.accessGap - 12);
           if (/multilingual|trusted message|rumor|faith leaders|care map|alert/i.test(action)) next.misinformation = clamp(next.misinformation - 16);
           if (/paper|redeploy|rotations|non-urgent|support/i.test(action)) next.staffGap = clamp(next.staffGap - 10);
-          if (action.includes("school gym")) next.accessGap = clamp(next.accessGap - 8);
+          if (action.includes("lower-pressure")) next.erPressure = clamp(next.erPressure - 8);
           if (action.includes("Redirect low-risk")) next.erPressure = clamp(next.erPressure - 12);
         });
 
         return next;
       }
 
-      function renderMetrics() {
-        metricsEl.innerHTML = Object.entries(metricInfo)
-          .map(([key, info]) => {
-            const value = state.metrics[key];
+      function renderHospitals() {
+        hospitalSelectEl.innerHTML = Object.keys(hospitals)
+          .map((name) => `<option value="${name}">${name}</option>`)
+          .join("");
+        hospitalSelectEl.value = state.hospitalName;
+      }
+
+      function renderFactInputs() {
+        factInputsEl.innerHTML = Object.entries(factInfo)
+          .map(([key, label]) => {
             return `
-              <div class="metric">
-                <label for="${key}">${info.label}</label>
-                <span class="metric-value" id="${key}Value">${value}</span>
-                <small>${info.help}</small>
-                <input id="${key}" type="range" min="0" max="100" value="${value}" data-key="${key}" />
+              <div class="fact">
+                <label for="${key}">${label}</label>
+                <input id="${key}" type="number" min="0" value="${state.facts[key]}" data-fact-key="${key}" />
               </div>
             `;
           })
           .join("");
+      }
+
+      function updateCalculatedMetrics() {
+        state.metrics = metricsFromFacts(state.facts);
+        setInitialScores();
       }
 
       function renderConditionPresets() {
@@ -1160,6 +1296,9 @@
             ? "Move updates and care closer to neighbourhoods with transit trouble"
             : "Re-run the drill every 6 hours as numbers change",
         ];
+        if (/fracture|broken|bone|cast|splint/i.test(plan.join(" "))) {
+          backup.push("Transfer only stable fracture cases after clinical assessment and receiving-site confirmation");
+        }
 
         phaseOne.innerHTML = first.map((item) => `<li>${item}</li>`).join("");
         phaseTwo.innerHTML = next.map((item) => `<li>${item}</li>`).join("") || "<li>Monitor the pressure dashboard and shift resources to the highest number.</li>";
@@ -1275,16 +1414,19 @@
       }
 
       function reset() {
-        state.metrics = { ...defaultMetrics };
+        state.hospitalName = "Brampton Civic Hospital";
+        state.facts = { ...hospitals[state.hospitalName] };
+        state.metrics = metricsFromFacts(state.facts);
         state.conditionPreset = "Balanced surge";
         state.condition = { ...conditionPresets[state.conditionPreset] };
         document.getElementById("issueText").value =
           "ER is packed, beds are not opening fast enough, and families are confused about where to go for help.";
         renderConditionPresets();
         renderConditionMetrics();
-        renderMetrics();
+        renderHospitals();
+        renderFactInputs();
         setInitialScores();
-        timelineEl.innerHTML = '<div class="empty-state">Describe the crisis, set the sliders, then run the agents.</div>';
+        timelineEl.innerHTML = '<div class="empty-state">Describe the crisis, enter the facts, then run ReLoad.</div>';
         phaseOne.innerHTML = "<li>Run the agents to create the solution.</li>";
         phaseTwo.innerHTML = "<li>The improved plan will show here.</li>";
         fallback.innerHTML = "<li>The backup plan will show here.</li>";
@@ -1292,14 +1434,6 @@
         systemStatus.textContent = "Ready";
         solutionBackdrop.classList.remove("show");
       }
-
-      metricsEl.addEventListener("input", (event) => {
-        const key = event.target.dataset.key;
-        if (!key) return;
-        state.metrics[key] = Number(event.target.value);
-        document.getElementById(`${key}Value`).textContent = event.target.value;
-        setInitialScores();
-      });
 
       conditionPresetEl.addEventListener("change", (event) => {
         const index = Number(event.target.value);
@@ -1325,6 +1459,22 @@
         setInitialScores();
       });
 
+      hospitalSelectEl.addEventListener("change", (event) => {
+        state.hospitalName = event.target.value;
+        state.facts = { ...hospitals[state.hospitalName] };
+        state.metrics = metricsFromFacts(state.facts);
+        renderFactInputs();
+        setInitialScores();
+      });
+
+      factInputsEl.addEventListener("input", (event) => {
+        const key = event.target.dataset.factKey;
+        if (!key) return;
+        state.facts[key] = Number(event.target.value);
+        state.metrics = metricsFromFacts(state.facts);
+        setInitialScores();
+      });
+
       document.getElementById("runBtn").addEventListener("click", runAgents);
       document.getElementById("resetBtn").addEventListener("click", reset);
       document.getElementById("closeModal").addEventListener("click", () => solutionBackdrop.classList.remove("show"));
@@ -1334,7 +1484,9 @@
 
       renderConditionPresets();
       renderConditionMetrics();
-      renderMetrics();
+      renderHospitals();
+      renderFactInputs();
+      state.metrics = metricsFromFacts(state.facts);
       setInitialScores();
     </script>
   </body>
