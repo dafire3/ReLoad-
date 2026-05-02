@@ -1,0 +1,1341 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ReLoad</title>
+    <style>
+      :root {
+        --ink: #15191d;
+        --muted: #68737d;
+        --bg: #eef2f4;
+        --panel: #ffffff;
+        --line: #d8e0e5;
+        --blue: #1f6feb;
+        --blue-dark: #164fa8;
+        --red: #d64a3a;
+        --yellow: #e2a323;
+        --green: #27885f;
+        --purple: #7557c2;
+        --shadow: 0 18px 45px rgba(21, 25, 29, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background: var(--bg);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      textarea,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        border: 0;
+        cursor: pointer;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 14px clamp(16px, 4vw, 46px);
+        background: rgba(238, 242, 244, 0.92);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        color: #fff;
+        background: var(--blue);
+        border-radius: 8px;
+        font-weight: 900;
+      }
+
+      .brand h1 {
+        margin: 0;
+        font-size: 1.16rem;
+        letter-spacing: 0;
+      }
+
+      .brand p,
+      .system-status {
+        margin: 2px 0 0;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+
+      main {
+        display: grid;
+        gap: 22px;
+        padding: 24px clamp(16px, 4vw, 46px) 44px;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(300px, 0.95fr) minmax(320px, 1.05fr);
+        gap: 22px;
+        align-items: stretch;
+      }
+
+      .signal-board,
+      .input-panel,
+      .war-room,
+      .score-panel,
+      .final-panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+
+      .signal-board {
+        position: relative;
+        overflow: hidden;
+        min-height: 390px;
+        padding: 24px;
+        color: #fff;
+        background: #17212b;
+      }
+
+      .grid-bg {
+        position: absolute;
+        inset: 0;
+        opacity: 0.34;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+        background-size: 34px 34px;
+      }
+
+      .signal-content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        height: 100%;
+        gap: 22px;
+      }
+
+      .hero-title {
+        align-self: end;
+      }
+
+      .kicker {
+        margin: 0 0 8px;
+        color: var(--red);
+        font-size: 0.78rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .signal-board .kicker {
+        color: #83d1ff;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: clamp(1.5rem, 3vw, 2.25rem);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .signal-board h2 {
+        max-width: 9ch;
+        font-size: clamp(3rem, 8vw, 5.8rem);
+        line-height: 0.86;
+      }
+
+      .signal-board p {
+        max-width: 46ch;
+        margin: 14px 0 0;
+        color: #d7e6ef;
+        line-height: 1.5;
+      }
+
+      .map {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        align-self: start;
+      }
+
+      .node {
+        min-height: 88px;
+        padding: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .node strong {
+        display: block;
+        font-size: 1.3rem;
+      }
+
+      .node span {
+        display: block;
+        margin-top: 4px;
+        color: #b9cad5;
+        font-size: 0.82rem;
+        font-weight: 800;
+      }
+
+      .input-panel {
+        padding: clamp(18px, 3vw, 28px);
+      }
+
+      .issue-box {
+        display: grid;
+        gap: 9px;
+        margin: 20px 0 18px;
+      }
+
+      label {
+        color: #3d4a54;
+        font-size: 0.9rem;
+        font-weight: 850;
+      }
+
+      textarea,
+      select {
+        width: 100%;
+        resize: vertical;
+        padding: 13px 14px;
+        color: var(--ink);
+        background: #fbfdfe;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        line-height: 1.45;
+      }
+
+      textarea {
+        min-height: 118px;
+      }
+
+      select {
+        resize: none;
+      }
+
+      .condition-panel {
+        display: grid;
+        gap: 14px;
+        margin: 0 0 20px;
+        padding: 16px;
+        background: #f5f8fa;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .condition-panel h3 {
+        margin: 0;
+        font-size: 1rem;
+      }
+
+      .preset-slider {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 7px 12px;
+        align-items: center;
+      }
+
+      .preset-slider strong {
+        color: var(--blue-dark);
+        font-size: 0.92rem;
+      }
+
+      .metrics {
+        display: grid;
+        gap: 16px;
+      }
+
+      .metric {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 7px 12px;
+        align-items: center;
+      }
+
+      .metric small {
+        grid-column: 1 / -1;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      .metric-value {
+        min-width: 44px;
+        color: var(--ink);
+        text-align: right;
+        font-weight: 900;
+      }
+
+      input[type="range"] {
+        grid-column: 1 / -1;
+        width: 100%;
+        accent-color: var(--blue);
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      .primary-btn,
+      .secondary-btn,
+      .close-btn {
+        min-height: 44px;
+        padding: 0 16px;
+        border-radius: 8px;
+        font-weight: 900;
+      }
+
+      .primary-btn {
+        color: #fff;
+        background: var(--blue);
+      }
+
+      .primary-btn:hover {
+        background: var(--blue-dark);
+      }
+
+      .secondary-btn,
+      .close-btn {
+        color: var(--ink);
+        background: #e8edf1;
+        border: 1px solid var(--line);
+      }
+
+      .dashboard {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .run-state {
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 850;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+      }
+
+      .empty-state {
+        display: grid;
+        place-items: center;
+        min-height: 250px;
+        padding: 28px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .agent-card {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 14px;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-left: 7px solid var(--agent-color);
+        border-radius: 8px;
+        background: #fbfdfe;
+        opacity: 0;
+        transform: translateY(10px);
+        animation: rise 0.32s ease forwards;
+      }
+
+      @keyframes rise {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .agent-icon {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        color: #fff;
+        background: var(--agent-color);
+        border-radius: 8px;
+        font-weight: 900;
+      }
+
+      .agent-card h3 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+      }
+
+      .agent-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .agent-card ul,
+      .final-panel ul,
+      .solution-modal ul {
+        margin: 10px 0 0;
+        padding-left: 18px;
+        line-height: 1.52;
+      }
+
+      .side-stack {
+        display: grid;
+        gap: 18px;
+      }
+
+      .score-panel,
+      .final-panel {
+        padding: 20px;
+      }
+
+      .scores {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 9px;
+        margin: 18px 0;
+      }
+
+      .score-box {
+        padding: 13px 9px;
+        background: #f5f8fa;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .score-box span {
+        color: var(--muted);
+        font-size: 0.75rem;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      .score-box strong {
+        display: block;
+        margin-top: 4px;
+        font-size: clamp(1.4rem, 4vw, 2rem);
+      }
+
+      .risk-bars {
+        display: grid;
+        gap: 10px;
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 108px 1fr 36px;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 0.82rem;
+        font-weight: 850;
+      }
+
+      .track {
+        height: 9px;
+        overflow: hidden;
+        background: #e4eaee;
+        border-radius: 999px;
+      }
+
+      .fill {
+        width: var(--value);
+        height: 100%;
+        background: var(--bar-color);
+        border-radius: inherit;
+        transition: width 0.45s ease;
+      }
+
+      .final-panel {
+        display: grid;
+        gap: 14px;
+      }
+
+      .phase {
+        padding-top: 13px;
+        border-top: 1px solid var(--line);
+      }
+
+      .phase h3 {
+        margin: 0 0 8px;
+        color: var(--blue-dark);
+        font-size: 0.88rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 30;
+        display: none;
+        place-items: center;
+        padding: 20px;
+        background: rgba(21, 25, 29, 0.55);
+      }
+
+      .modal-backdrop.show {
+        display: grid;
+      }
+
+      .solution-modal {
+        width: min(720px, 100%);
+        max-height: min(760px, 92vh);
+        overflow: auto;
+        padding: 24px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+      }
+
+      .modal-top {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 14px;
+      }
+
+      .badge {
+        display: inline-flex;
+        margin-top: 12px;
+        padding: 7px 10px;
+        color: #fff;
+        background: var(--green);
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 900;
+      }
+
+      @media (max-width: 980px) {
+        .hero,
+        .dashboard {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 650px) {
+        .topbar,
+        .panel-head,
+        .modal-top {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .map,
+        .scores {
+          grid-template-columns: 1fr;
+        }
+
+        .bar-row {
+          grid-template-columns: 88px 1fr 34px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">R</div>
+        <div>
+          <h1>ReLoad</h1>
+          <p>Condition X simulator</p>
+        </div>
+      </div>
+      <div class="system-status" id="systemStatus">Ready</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="signal-board" aria-label="Hospital signal board">
+          <div class="grid-bg"></div>
+          <div class="signal-content">
+            <div class="map">
+              <div class="node"><strong id="erNode">80</strong><span>ER crowding</span></div>
+              <div class="node"><strong id="bedNode">65</strong><span>Beds blocked</span></div>
+              <div class="node"><strong id="staffNode">40</strong><span>Staff shortage</span></div>
+              <div class="node"><strong id="accessNode">70</strong><span>Access trouble</span></div>
+              <div class="node"><strong id="infoNode">55</strong><span>False info</span></div>
+              <div class="node"><strong id="scoreNode">39</strong><span>Current score</span></div>
+            </div>
+            <div class="hero-title">
+              <p class="kicker">ReLoad</p>
+              <h2>ReLoad</h2>
+              <p>Type what is happening, set the severity, then run five repair rounds until the plan gets tougher.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-panel">
+          <p class="kicker">Crisis Input</p>
+          <h2>What is happening right now?</h2>
+
+          <div class="issue-box">
+            <label for="issueText">Describe the hospital problem</label>
+            <textarea id="issueText">ER is packed, beds are not opening fast enough, and families are confused about where to go for help.</textarea>
+          </div>
+
+          <div class="condition-panel">
+            <h3>Condition X preset</h3>
+            <div class="preset-slider">
+              <label for="conditionPreset">Disease profile</label>
+              <strong id="conditionPresetName">Balanced surge</strong>
+              <input id="conditionPreset" type="range" min="0" max="4" value="0" />
+            </div>
+            <div class="metrics" id="conditionMetrics"></div>
+          </div>
+
+          <div class="metrics" id="metrics"></div>
+
+          <div class="controls">
+            <button class="primary-btn" id="runBtn" type="button">Run Agents</button>
+            <button class="secondary-btn" id="resetBtn" type="button">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="dashboard">
+        <div class="war-room">
+          <div class="panel-head">
+            <div>
+              <p class="kicker">Simulation</p>
+              <h2>Five repair rounds</h2>
+            </div>
+            <div class="run-state" id="runState">Waiting</div>
+          </div>
+          <div class="timeline" id="timeline">
+            <div class="empty-state">Describe the crisis, set the sliders, then run ReLoad.</div>
+          </div>
+        </div>
+
+        <aside class="side-stack">
+          <div class="score-panel">
+            <p class="kicker">Scoreboard</p>
+            <h2>Plan strength</h2>
+            <div class="scores">
+              <div class="score-box"><span>Before</span><strong id="beforeScore">--</strong></div>
+              <div class="score-box"><span>After</span><strong id="afterScore">--</strong></div>
+              <div class="score-box"><span>Gain</span><strong id="gainScore">--</strong></div>
+            </div>
+            <div class="risk-bars" id="riskBars"></div>
+          </div>
+
+          <div class="final-panel">
+            <p class="kicker">Final Solution</p>
+            <h2>Waiting for agents</h2>
+            <div class="phase">
+              <h3>Do First</h3>
+              <ul id="phaseOne"><li>Run the agents to create the solution.</li></ul>
+            </div>
+            <div class="phase">
+              <h3>Next</h3>
+              <ul id="phaseTwo"><li>The improved plan will show here.</li></ul>
+            </div>
+            <div class="phase">
+              <h3>Backup</h3>
+              <ul id="fallback"><li>The backup plan will show here.</li></ul>
+            </div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="solutionBackdrop" role="dialog" aria-modal="true" aria-labelledby="solutionTitle">
+      <div class="solution-modal">
+        <div class="modal-top">
+          <div>
+            <p class="kicker">Solution Ready</p>
+            <h2 id="solutionTitle">ReLoad fixed the plan</h2>
+            <span class="badge" id="modalBadge">Score improved</span>
+          </div>
+          <button class="close-btn" id="closeModal" type="button">Close</button>
+        </div>
+        <div id="modalBody"></div>
+      </div>
+    </div>
+
+    <script>
+      const defaultMetrics = {
+        erPressure: 80,
+        bedBlock: 65,
+        accessGap: 70,
+        misinformation: 55,
+        staffGap: 40,
+      };
+
+      const conditionPresets = {
+        "Balanced surge": { contagiousness: 65, deathRisk: 45, hospitalization: 60, spreadSpeed: 55 },
+        "Fast spread": { contagiousness: 90, deathRisk: 35, hospitalization: 55, spreadSpeed: 88 },
+        "High death toll": { contagiousness: 62, deathRisk: 92, hospitalization: 86, spreadSpeed: 58 },
+        "Silent spread": { contagiousness: 82, deathRisk: 50, hospitalization: 64, spreadSpeed: 78 },
+        "Hospital crusher": { contagiousness: 75, deathRisk: 78, hospitalization: 95, spreadSpeed: 72 },
+      };
+
+      const conditionPresetNames = Object.keys(conditionPresets);
+
+      const conditionInfo = {
+        contagiousness: {
+          label: "Contagious rate",
+          help: "How easily Condition X spreads between people.",
+        },
+        deathRisk: {
+          label: "Death risk",
+          help: "How deadly the disease is once people get sick.",
+        },
+        hospitalization: {
+          label: "Hospitalization rate",
+          help: "How many cases need hospital-level care.",
+        },
+        spreadSpeed: {
+          label: "Speed of spread",
+          help: "How quickly cases rise across the city.",
+        },
+      };
+
+      const metricInfo = {
+        erPressure: {
+          label: "ER crowding",
+          help: "How packed the emergency room is.",
+          color: "#d64a3a",
+          node: "erNode",
+          words: ["er", "emergency", "waiting", "crowded", "packed", "ambulance", "surge", "patients"],
+        },
+        bedBlock: {
+          label: "Beds blocked",
+          help: "How hard it is to move admitted patients into beds.",
+          color: "#1f6feb",
+          node: "bedNode",
+          words: ["bed", "beds", "admitted", "discharge", "hallway", "room", "rooms", "blocked"],
+        },
+        accessGap: {
+          label: "Trouble getting care",
+          help: "How hard it is for people to reach clinics, hospitals, or updates.",
+          color: "#e2a323",
+          node: "accessNode",
+          words: ["transit", "bus", "travel", "neighbourhood", "neighborhood", "clinic", "access", "reach", "transport"],
+        },
+        misinformation: {
+          label: "False information",
+          help: "How much rumor or confusion is spreading.",
+          color: "#7557c2",
+          node: "infoNode",
+          words: ["rumor", "rumour", "fake", "false", "misinformation", "confused", "confusion", "social", "posts", "panic"],
+        },
+        staffGap: {
+          label: "Staff shortage",
+          help: "How short the hospital is on nurses, doctors, and support workers.",
+          color: "#27885f",
+          node: "staffNode",
+          words: ["staff", "nurse", "nurses", "doctor", "doctors", "sick", "shortage", "burnout", "shift"],
+        },
+      };
+
+      const state = {
+        metrics: { ...defaultMetrics },
+        conditionPreset: "Balanced surge",
+        condition: { ...conditionPresets["Balanced surge"] },
+        running: false,
+      };
+
+      const metricsEl = document.getElementById("metrics");
+      const conditionPresetEl = document.getElementById("conditionPreset");
+      const conditionPresetNameEl = document.getElementById("conditionPresetName");
+      const conditionMetricsEl = document.getElementById("conditionMetrics");
+      const timelineEl = document.getElementById("timeline");
+      const runState = document.getElementById("runState");
+      const systemStatus = document.getElementById("systemStatus");
+      const beforeScore = document.getElementById("beforeScore");
+      const afterScore = document.getElementById("afterScore");
+      const gainScore = document.getElementById("gainScore");
+      const riskBars = document.getElementById("riskBars");
+      const phaseOne = document.getElementById("phaseOne");
+      const phaseTwo = document.getElementById("phaseTwo");
+      const fallback = document.getElementById("fallback");
+      const solutionBackdrop = document.getElementById("solutionBackdrop");
+      const modalBody = document.getElementById("modalBody");
+      const modalBadge = document.getElementById("modalBadge");
+
+      function clamp(value) {
+        return Math.max(0, Math.min(100, Math.round(value)));
+      }
+
+      function conditionRiskBoost(condition = state.condition) {
+        return Math.round(
+          condition.contagiousness * 0.08 +
+            condition.deathRisk * 0.09 +
+            condition.hospitalization * 0.11 +
+            condition.spreadSpeed * 0.07
+        );
+      }
+
+      function calculateRisk(metrics, condition = state.condition) {
+        return Math.round(
+          metrics.erPressure * 0.3 +
+            metrics.bedBlock * 0.25 +
+            metrics.accessGap * 0.2 +
+            metrics.misinformation * 0.15 +
+            metrics.staffGap * 0.1 +
+            conditionRiskBoost(condition)
+        );
+      }
+
+      function score(metrics, condition = state.condition) {
+        return clamp(100 - calculateRisk(metrics, condition));
+      }
+
+      function strongestPressures(metrics, issue = "") {
+        const issueScores = issuePressureScores(issue);
+        return Object.entries(metrics)
+          .sort((a, b) => b[1] + (issueScores[b[0]] || 0) - (a[1] + (issueScores[a[0]] || 0)))
+          .slice(0, 2)
+          .map(([key]) => metricInfo[key].label.toLowerCase());
+      }
+
+      function issuePressureScores(issue) {
+        const lower = issue.toLowerCase();
+        return Object.fromEntries(
+          Object.entries(metricInfo).map(([key, info]) => {
+            const hits = info.words.reduce((total, word) => total + (lower.includes(word) ? 1 : 0), 0);
+            return [key, hits * 18];
+          })
+        );
+      }
+
+      function rankedPressureKeys(metrics, issue) {
+        const issueScores = issuePressureScores(issue);
+        return Object.keys(metrics).sort((a, b) => metrics[b] + (issueScores[b] || 0) - (metrics[a] + (issueScores[a] || 0)));
+      }
+
+      function plannerAgent(issue, metrics) {
+        const actions = [];
+        const ranked = rankedPressureKeys(metrics, issue);
+
+        ranked.forEach((key) => {
+          if (key === "erPressure" && metrics.erPressure >= 45) actions.push("Open a mobile triage clinic beside the ER");
+          if (key === "bedBlock" && metrics.bedBlock >= 45) actions.push("Move stable patients to a discharge lounge and free bed space");
+          if (key === "accessGap" && metrics.accessGap >= 45) actions.push("Send community volunteers to high-need neighbourhoods");
+          if (key === "misinformation" && metrics.misinformation >= 35) actions.push("Send clear multilingual updates through trusted local channels");
+          if (key === "staffGap" && metrics.staffGap >= 45) actions.push("Switch to a simpler paper backup workflow and reserve staff for severe cases");
+        });
+        if (actions.length < 3) actions.push("Redirect low-risk patients to clinics and virtual nurse lines");
+
+        return [...new Set(actions)].slice(0, 4);
+      }
+
+      const repairActions = {
+        erPressure: [
+          "Set up an outdoor triage desk before patients enter the ER",
+          "Redirect low-risk patients to partner clinics with same-day slots",
+          "Add a nurse phone line to stop mild cases from coming to the ER",
+          "Create a separate ambulance offload lane for severe cases",
+        ],
+        bedBlock: [
+          "Create a fast discharge team for stable patients",
+          "Move waiting admitted patients to a supervised discharge lounge",
+          "Run hourly bed huddles with pharmacy, transport, and ward leads",
+          "Use short-stay observation beds for patients who do not need admission",
+        ],
+        accessGap: [
+          "Open a school gym care site closer to the hardest-hit neighbourhood",
+          "Send shuttle vans to neighbourhoods with poor transit access",
+          "Place volunteers at libraries, schools, and community centres",
+          "Move mobile care teams to the postal codes reporting the longest travel barriers",
+        ],
+        misinformation: [
+          "Send one clear multilingual alert through schools, clinics, and local leaders",
+          "Track the top rumor and answer it directly in every update",
+          "Use faith leaders and local creators to repeat the same trusted message",
+          "Publish a simple care map showing where to go and when to use the ER",
+        ],
+        staffGap: [
+          "Pause non-urgent services and move staff to triage and severe cases",
+          "Split teams into triage, severe-care, and backup rotations",
+          "Use paper checklists so the plan still works during system failure",
+          "Call in trained community volunteers for wayfinding and non-clinical support",
+        ],
+      };
+
+      function hospitalAgent(metrics, plan, issue = "") {
+        const problems = [];
+        const ranked = rankedPressureKeys(metrics, issue);
+        const biggest = ranked[0];
+        const coverage = {
+          erPressure: plan.some((item) => /triage|Redirect low-risk|phone line|ambulance/i.test(item)),
+          bedBlock: plan.some((item) => /discharge|bed huddle|observation/i.test(item)),
+          accessGap: plan.some((item) => /volunteer|school gym|shuttle|mobile care|neighbourhood/i.test(item)),
+          misinformation: plan.some((item) => /multilingual|trusted|rumor|faith|care map|alert/i.test(item)),
+          staffGap: plan.some((item) => /paper|staff|rotations|volunteers|non-urgent/i.test(item)),
+        };
+
+        if (metrics.bedBlock >= 65 && !coverage.bedBlock) {
+          problems.push("Not feasible: beds are still blocked and the plan does not free inpatient space.");
+        }
+        if (metrics.erPressure >= 75 && !coverage.erPressure) {
+          problems.push("Not feasible: the ER front door stays overloaded without a separate triage path.");
+        }
+        if (metrics.staffGap >= 70 && !coverage.staffGap) {
+          problems.push("Risky: the plan asks too much from staff during a shortage.");
+        }
+        if (biggest === "accessGap" && !coverage.accessGap) {
+          problems.push("Not feasible: people still cannot reach the solution, so the plan fails outside the hospital.");
+        }
+        if (biggest === "misinformation" && !coverage.misinformation) {
+          problems.push("Risky: the rumor problem is stronger than the public message.");
+        }
+
+        const uncoveredHigh = ranked.filter((key) => metrics[key] >= 68 && !coverage[key]);
+        uncoveredHigh.forEach((key) => {
+          if (!problems.some((problem) => problem.includes(metricInfo[key].label))) {
+            problems.push(`Risky: ${metricInfo[key].label.toLowerCase()} is high but not directly handled.`);
+          }
+        });
+
+        const status = problems.some((item) => item.startsWith("Not feasible"))
+          ? "Not feasible yet"
+          : problems.length
+            ? "Feasible but risky"
+            : "Feasible";
+
+        return {
+          status,
+          focus: metricInfo[biggest].label.toLowerCase(),
+          problems,
+          summary:
+            status === "Feasible"
+              ? `Feasible: the plan covers ${metricInfo[biggest].label.toLowerCase()} and has no major hospital-flow gap.`
+              : problems[0],
+          missingKeys: ranked.filter((key) => !coverage[key]).slice(0, 3),
+        };
+      }
+
+      function chooseRepairAction(key, round, existingPlan) {
+        const pool = repairActions[key] || repairActions.erPressure;
+        const shifted = [...pool.slice((round - 1) % pool.length), ...pool.slice(0, (round - 1) % pool.length)];
+        return shifted.find((action) => !existingPlan.includes(action)) || pool[round % pool.length];
+      }
+
+      function chooseFinalPlan(metrics, issue, rounds) {
+        const ranked = rankedPressureKeys(metrics, issue);
+        const final = [];
+
+        ranked.slice(0, 4).forEach((key, index) => {
+          const roundMatch = [...rounds].reverse().find((round) => round.mutation.key === key && round.added);
+          if (roundMatch) {
+            final.push(roundMatch.added.split("; ")[0]);
+          } else {
+            final.push(chooseRepairAction(key, index + 1, final));
+          }
+        });
+
+        const hardFailures = rounds.filter((round) => round.feasibility.status !== "Feasible").slice(-2);
+        hardFailures.forEach((round) => {
+          const key = round.feasibility.missingKeys[0] || round.mutation.key;
+          final.push(chooseRepairAction(key, round.round + 1, final));
+        });
+
+        return [...new Set(final)].slice(0, 6);
+      }
+
+      function feasibilityBadge(status) {
+        if (status === "Feasible") return "Feasible";
+        if (status === "Feasible but risky") return "Risky";
+        return "Not feasible";
+      }
+
+      function feasibilityColor(status) {
+        if (status === "Feasible") return "#27885f";
+        if (status === "Feasible but risky") return "#e2a323";
+        return "#d64a3a";
+      }
+
+      function conditionXAgent(metrics, issue, round, condition = state.condition) {
+        const spreadBoost = Math.round(condition.contagiousness / 12 + condition.spreadSpeed / 14);
+        const deathBoost = Math.round(condition.deathRisk / 13);
+        const hospitalBoost = Math.round(condition.hospitalization / 11);
+        const choices = {
+          erPressure: [
+            { name: "Sudden ER surge", amount: 10 + round + hospitalBoost + deathBoost, note: "More severe patients arrive at once, pushing the waiting room past the plan." },
+            { name: "Ambulance stack-up", amount: 9 + round + hospitalBoost, note: "Ambulances cannot offload quickly, so the ER entrance jams." },
+          ],
+          bedBlock: [
+            { name: "Beds stop moving", amount: 9 + round + hospitalBoost + deathBoost, note: "Discharges slow down and admitted patients stack up." },
+            { name: "Ward overflow", amount: 8 + round + hospitalBoost, note: "A full ward closes beds that the plan expected to use." },
+          ],
+          accessGap: [
+            { name: "Transit failure", amount: 9 + round + spreadBoost, note: "Patients and staff cannot reach the right care sites." },
+            { name: "Neighbourhood access gap", amount: 8 + round + spreadBoost, note: "The highest-need area is too far from the new care route." },
+          ],
+          misinformation: [
+            { name: "Misinformation spike", amount: 11 + round + deathBoost + spreadBoost, note: "False posts tell people to avoid official care sites." },
+            { name: "Trust collapse", amount: 10 + round + deathBoost, note: "Families ignore alerts because the message does not sound local enough." },
+          ],
+          staffGap: [
+            { name: "Staff sickness", amount: 9 + round + spreadBoost, note: "A wave of staff illness removes a full shift team." },
+            { name: "Shift burnout", amount: 8 + round + hospitalBoost, note: "The plan depends on workers who are already stretched too thin." },
+          ],
+        };
+
+        let ranked = rankedPressureKeys(metrics, issue);
+        if (condition.hospitalization >= 80) ranked = ["bedBlock", "erPressure", ...ranked.filter((key) => key !== "bedBlock" && key !== "erPressure")];
+        if (condition.contagiousness >= 82 || condition.spreadSpeed >= 82) ranked = ["erPressure", "staffGap", ...ranked.filter((key) => key !== "erPressure" && key !== "staffGap")];
+        if (condition.deathRisk >= 80) ranked = ["misinformation", "erPressure", "bedBlock", ...ranked.filter((key) => !["misinformation", "erPressure", "bedBlock"].includes(key))];
+        const key = ranked[(round - 1) % 3] || "erPressure";
+        const options = choices[key];
+        return { ...options[(round - 1) % options.length], key };
+      }
+
+      function repairPlan(metrics, plan, mutation, feasibility, round) {
+        const repaired = [...plan];
+        const needs = [mutation.key, ...feasibility.missingKeys];
+
+        needs.slice(0, 3).forEach((key, index) => {
+          repaired.push(chooseRepairAction(key, round + index, repaired));
+        });
+        if (feasibility.status === "Not feasible yet") {
+          repaired.push(chooseRepairAction(feasibility.missingKeys[0] || mutation.key, round + 2, repaired));
+        }
+        if (metrics.staffGap >= 55 && !repaired.some((item) => item.includes("paper"))) {
+          repaired.push("Use paper checklists so the plan still works during system failure");
+        }
+
+        const unique = [...new Set(repaired)];
+        return unique.length > 8 ? [...unique.slice(0, 3), ...unique.slice(-5)] : unique;
+      }
+
+      function applySolution(metrics, plan, mutation) {
+        const next = { ...metrics };
+        next[mutation.key] = clamp(next[mutation.key] + mutation.amount);
+
+        plan.forEach((action) => {
+          if (/mobile triage|outdoor triage|Redirect low-risk|phone line|ambulance/i.test(action)) next.erPressure = clamp(next.erPressure - 14);
+          if (/discharge|bed huddles|observation|bed space/i.test(action)) next.bedBlock = clamp(next.bedBlock - 14);
+          if (/community volunteers|school gym|shuttle|mobile care|neighbourhoods/i.test(action)) next.accessGap = clamp(next.accessGap - 12);
+          if (/multilingual|trusted message|rumor|faith leaders|care map|alert/i.test(action)) next.misinformation = clamp(next.misinformation - 16);
+          if (/paper|redeploy|rotations|non-urgent|support/i.test(action)) next.staffGap = clamp(next.staffGap - 10);
+          if (action.includes("school gym")) next.accessGap = clamp(next.accessGap - 8);
+          if (action.includes("Redirect low-risk")) next.erPressure = clamp(next.erPressure - 12);
+        });
+
+        return next;
+      }
+
+      function renderMetrics() {
+        metricsEl.innerHTML = Object.entries(metricInfo)
+          .map(([key, info]) => {
+            const value = state.metrics[key];
+            return `
+              <div class="metric">
+                <label for="${key}">${info.label}</label>
+                <span class="metric-value" id="${key}Value">${value}</span>
+                <small>${info.help}</small>
+                <input id="${key}" type="range" min="0" max="100" value="${value}" data-key="${key}" />
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderConditionPresets() {
+        const index = Math.max(0, conditionPresetNames.indexOf(state.conditionPreset));
+        conditionPresetEl.max = conditionPresetNames.length - 1;
+        conditionPresetEl.value = index;
+        conditionPresetNameEl.textContent = state.conditionPreset === "Custom" ? "Custom" : conditionPresetNames[index];
+      }
+
+      function renderConditionMetrics() {
+        conditionMetricsEl.innerHTML = Object.entries(conditionInfo)
+          .map(([key, info]) => {
+            const value = state.condition[key];
+            return `
+              <div class="metric">
+                <label for="${key}">${info.label}</label>
+                <span class="metric-value" id="${key}Value">${value}</span>
+                <small>${info.help}</small>
+                <input id="${key}" type="range" min="0" max="100" value="${value}" data-condition-key="${key}" />
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderSignals(metrics = state.metrics) {
+        Object.entries(metricInfo).forEach(([key, info]) => {
+          document.getElementById(info.node).textContent = metrics[key];
+        });
+        document.getElementById("scoreNode").textContent = score(metrics);
+      }
+
+      function renderBars(metrics = state.metrics) {
+        riskBars.innerHTML = Object.entries(metricInfo)
+          .map(([key, info]) => {
+            const value = metrics[key];
+            return `
+              <div class="bar-row">
+                <span>${info.label}</span>
+                <div class="track"><div class="fill" style="--value:${value}%; --bar-color:${info.color}"></div></div>
+                <span>${value}</span>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function setInitialScores() {
+        beforeScore.textContent = score(state.metrics);
+        afterScore.textContent = "--";
+        gainScore.textContent = "--";
+        renderSignals();
+        renderBars();
+      }
+
+      function cardHTML(name, color, icon, body, list = []) {
+        const listHTML = list.length ? `<ul>${list.map((item) => `<li>${item}</li>`).join("")}</ul>` : "";
+        return `
+          <article class="agent-card" style="--agent-color:${color}">
+            <div class="agent-icon">${icon}</div>
+            <div>
+              <h3>${name}</h3>
+              <p>${body}</p>
+              ${listHTML}
+            </div>
+          </article>
+        `;
+      }
+
+      function addCard(html, delay) {
+        return new Promise((resolve) => {
+          window.setTimeout(() => {
+            timelineEl.insertAdjacentHTML("beforeend", html);
+            resolve();
+          }, delay);
+        });
+      }
+
+      function setFinalPlan(plan, mutation) {
+        const first = plan.slice(0, 2);
+        const next = plan.slice(2, 5);
+        const backup = [
+          "Keep a paper patient list and printed phone tree ready",
+          mutation.key === "accessGap"
+            ? "Move updates and care closer to neighbourhoods with transit trouble"
+            : "Re-run the drill every 6 hours as numbers change",
+        ];
+
+        phaseOne.innerHTML = first.map((item) => `<li>${item}</li>`).join("");
+        phaseTwo.innerHTML = next.map((item) => `<li>${item}</li>`).join("") || "<li>Monitor the pressure dashboard and shift resources to the highest number.</li>";
+        fallback.innerHTML = backup.map((item) => `<li>${item}</li>`).join("");
+      }
+
+      function showSolutionModal(issue, plan, rounds, before, after) {
+        modalBadge.textContent = `Score ${before} to ${after}`;
+        const finalMutation = rounds[rounds.length - 1].mutation;
+        modalBody.innerHTML = `
+          <p><strong>Problem:</strong> ${escapeHTML(issue)}</p>
+          <p><strong>Condition X profile:</strong> contagious ${state.condition.contagiousness}/100, death risk ${state.condition.deathRisk}/100, hospitalization ${state.condition.hospitalization}/100, spread speed ${state.condition.spreadSpeed}/100.</p>
+          <p><strong>Last Condition X attack:</strong> ${finalMutation.name}. ${finalMutation.note}</p>
+          <h3>Hospital feasibility</h3>
+          <ul>
+            ${rounds
+              .map(
+                (round) =>
+                  `<li><strong>Round ${round.round}: ${round.feasibility.status}.</strong> ${round.feasibility.summary}</li>`
+              )
+              .join("")}
+          </ul>
+          <h3>What happened each round</h3>
+          <ul>
+            ${rounds
+              .map(
+                (round) =>
+                  `<li><strong>Round ${round.round}:</strong> Condition X used ${round.mutation.name}. Planner changed: ${round.added || "kept the strongest actions and tightened the plan"}.</li>`
+              )
+              .join("")}
+          </ul>
+          <h3>Final solution</h3>
+          <ul>${plan.map((item) => `<li>${item}</li>`).join("")}</ul>
+          <p><strong>Remaining weakness:</strong> ${strongestPressures(state.metrics, issue).join(" and ")} should keep being watched.</p>
+        `;
+        solutionBackdrop.classList.add("show");
+      }
+
+      function escapeHTML(text) {
+        return text.replace(/[&<>"']/g, (char) => {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char];
+        });
+      }
+
+      async function runAgents() {
+        if (state.running) return;
+        state.running = true;
+        document.getElementById("runBtn").disabled = true;
+        solutionBackdrop.classList.remove("show");
+        timelineEl.innerHTML = "";
+        runState.textContent = "Running";
+        systemStatus.textContent = "Running";
+
+        const issue = document.getElementById("issueText").value.trim() || "Hospital is under pressure.";
+        const before = score(state.metrics);
+        let plan = plannerAgent(issue, state.metrics);
+        let roundMetrics = { ...state.metrics };
+        const rounds = [];
+
+        beforeScore.textContent = before;
+        afterScore.textContent = "--";
+        gainScore.textContent = "--";
+
+        await addCard(cardHTML("Planner", "#1f6feb", "P", "First response created from your typed problem and severity sliders.", plan), 250);
+
+        for (let round = 1; round <= 5; round += 1) {
+          const beforePlan = [...plan];
+          const feasibility = hospitalAgent(roundMetrics, plan, issue);
+          const mutation = conditionXAgent(roundMetrics, issue, round, state.condition);
+          const attackedMetrics = { ...roundMetrics, [mutation.key]: clamp(roundMetrics[mutation.key] + mutation.amount) };
+          const repairedPlan = repairPlan(attackedMetrics, plan, mutation, feasibility, round);
+          const added = repairedPlan.filter((item) => !beforePlan.includes(item)).slice(-2).join("; ");
+          const focus = strongestPressures(roundMetrics, issue).join(" and ");
+
+          rounds.push({ round, focus, mutation, feasibility, added });
+
+          await addCard(
+            cardHTML(
+              `Planner Round ${round}`,
+              feasibilityColor(feasibility.status),
+              String(round),
+              `Hospital result: ${feasibilityBadge(feasibility.status)}. Condition X attacked with ${mutation.name}.`,
+              [
+                feasibility.summary,
+                ...feasibility.problems.slice(1, 3),
+                added ? `Planner changed: ${added}` : "Planner changed: tightened the current actions.",
+              ]
+            ),
+            round === 1 ? 600 : 500
+          );
+
+          plan = repairedPlan;
+          roundMetrics = applySolution(roundMetrics, plan, mutation);
+        }
+
+        const finalMutation = rounds[rounds.length - 1].mutation;
+        const afterMetrics = roundMetrics;
+        plan = chooseFinalPlan(afterMetrics, issue, rounds);
+        const after = score(afterMetrics);
+        const gain = after - before;
+
+        afterScore.textContent = after;
+        gainScore.textContent = `${gain >= 0 ? "+" : ""}${gain}`;
+        renderSignals(afterMetrics);
+        renderBars(afterMetrics);
+        setFinalPlan(plan, finalMutation);
+        showSolutionModal(issue, plan, rounds, before, after);
+
+        runState.textContent = "Solution ready";
+        systemStatus.textContent = "Ready";
+        document.getElementById("runBtn").disabled = false;
+        state.running = false;
+      }
+
+      function reset() {
+        state.metrics = { ...defaultMetrics };
+        state.conditionPreset = "Balanced surge";
+        state.condition = { ...conditionPresets[state.conditionPreset] };
+        document.getElementById("issueText").value =
+          "ER is packed, beds are not opening fast enough, and families are confused about where to go for help.";
+        renderConditionPresets();
+        renderConditionMetrics();
+        renderMetrics();
+        setInitialScores();
+        timelineEl.innerHTML = '<div class="empty-state">Describe the crisis, set the sliders, then run the agents.</div>';
+        phaseOne.innerHTML = "<li>Run the agents to create the solution.</li>";
+        phaseTwo.innerHTML = "<li>The improved plan will show here.</li>";
+        fallback.innerHTML = "<li>The backup plan will show here.</li>";
+        runState.textContent = "Waiting";
+        systemStatus.textContent = "Ready";
+        solutionBackdrop.classList.remove("show");
+      }
+
+      metricsEl.addEventListener("input", (event) => {
+        const key = event.target.dataset.key;
+        if (!key) return;
+        state.metrics[key] = Number(event.target.value);
+        document.getElementById(`${key}Value`).textContent = event.target.value;
+        setInitialScores();
+      });
+
+      conditionPresetEl.addEventListener("change", (event) => {
+        const index = Number(event.target.value);
+        state.conditionPreset = conditionPresetNames[index] || conditionPresetNames[0];
+        state.condition = { ...conditionPresets[state.conditionPreset] };
+        renderConditionPresets();
+        renderConditionMetrics();
+        setInitialScores();
+      });
+
+      conditionPresetEl.addEventListener("input", (event) => {
+        const index = Number(event.target.value);
+        conditionPresetNameEl.textContent = conditionPresetNames[index] || conditionPresetNames[0];
+      });
+
+      conditionMetricsEl.addEventListener("input", (event) => {
+        const key = event.target.dataset.conditionKey;
+        if (!key) return;
+        state.condition[key] = Number(event.target.value);
+        document.getElementById(`${key}Value`).textContent = event.target.value;
+        state.conditionPreset = "Custom";
+        conditionPresetNameEl.textContent = "Custom";
+        setInitialScores();
+      });
+
+      document.getElementById("runBtn").addEventListener("click", runAgents);
+      document.getElementById("resetBtn").addEventListener("click", reset);
+      document.getElementById("closeModal").addEventListener("click", () => solutionBackdrop.classList.remove("show"));
+      solutionBackdrop.addEventListener("click", (event) => {
+        if (event.target === solutionBackdrop) solutionBackdrop.classList.remove("show");
+      });
+
+      renderConditionPresets();
+      renderConditionMetrics();
+      renderMetrics();
+      setInitialScores();
+    </script>
+  </body>
+</html>
