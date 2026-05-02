@@ -105,6 +105,7 @@
       .input-panel,
       .war-room,
       .score-panel,
+      .availability-panel,
       .final-panel {
         background: var(--panel);
         border: 1px solid var(--line);
@@ -467,6 +468,7 @@
       }
 
       .score-panel,
+      .availability-panel,
       .final-panel {
         padding: 20px;
       }
@@ -502,6 +504,38 @@
       .risk-bars {
         display: grid;
         gap: 10px;
+      }
+
+      .availability-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .hospital-card {
+        padding: 13px;
+        background: #f5f8fa;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .hospital-card strong {
+        display: block;
+        margin-bottom: 9px;
+      }
+
+      .mini-stat {
+        display: grid;
+        grid-template-columns: 64px 1fr auto;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 850;
+      }
+
+      .mini-stat + .mini-stat {
+        margin-top: 7px;
       }
 
       .bar-row {
@@ -712,6 +746,12 @@
             <div class="risk-bars" id="riskBars"></div>
           </div>
 
+          <div class="availability-panel">
+            <p class="kicker">Hospital Availability</p>
+            <h2>Nearby capacity</h2>
+            <div class="availability-list" id="availabilityList"></div>
+          </div>
+
           <div class="final-panel">
             <p class="kicker">Final Solution</p>
             <h2>Waiting for agents</h2>
@@ -891,6 +931,7 @@
       const afterScore = document.getElementById("afterScore");
       const gainScore = document.getElementById("gainScore");
       const riskBars = document.getElementById("riskBars");
+      const availabilityList = document.getElementById("availabilityList");
       const phaseOne = document.getElementById("phaseOne");
       const phaseTwo = document.getElementById("phaseTwo");
       const fallback = document.getElementById("fallback");
@@ -1256,12 +1297,65 @@
           .join("");
       }
 
+      function availabilityStats(facts) {
+        const erOpen = Math.max(0, facts.erCapacity - facts.erCurrent);
+        const bedOpen = facts.bedCapacity > 0 ? Math.max(0, facts.bedCapacity - facts.bedsOccupied) : 0;
+        const staffOpen = Math.max(0, facts.staffAvailable - facts.staffNeeded);
+        return {
+          er: {
+            label: facts.erCapacity > 0 ? `${erOpen}/${facts.erCapacity}` : "N/A",
+            value: facts.erCapacity > 0 ? clamp((erOpen / facts.erCapacity) * 100) : 0,
+            color: erOpen > 0 ? "#27885f" : "#d64a3a",
+          },
+          beds: {
+            label: facts.bedCapacity > 0 ? `${bedOpen}/${facts.bedCapacity}` : "N/A",
+            value: facts.bedCapacity > 0 ? clamp((bedOpen / facts.bedCapacity) * 100) : 0,
+            color: bedOpen > 0 ? "#27885f" : "#d64a3a",
+          },
+          staff: {
+            label: staffOpen >= 0 ? `+${staffOpen}` : `${staffOpen}`,
+            value: facts.staffNeeded > 0 ? clamp((facts.staffAvailable / facts.staffNeeded) * 100) : 0,
+            color: facts.staffAvailable >= facts.staffNeeded ? "#27885f" : "#e2a323",
+          },
+        };
+      }
+
+      function renderAvailability() {
+        availabilityList.innerHTML = Object.entries(hospitals)
+          .map(([name, baseFacts]) => {
+            const facts = name === state.hospitalName ? state.facts : baseFacts;
+            const stats = availabilityStats(facts);
+            return `
+              <div class="hospital-card">
+                <strong>${name}</strong>
+                <div class="mini-stat">
+                  <span>ER</span>
+                  <div class="track"><div class="fill" style="--value:${stats.er.value}%; --bar-color:${stats.er.color}"></div></div>
+                  <span>${stats.er.label}</span>
+                </div>
+                <div class="mini-stat">
+                  <span>Beds</span>
+                  <div class="track"><div class="fill" style="--value:${stats.beds.value}%; --bar-color:${stats.beds.color}"></div></div>
+                  <span>${stats.beds.label}</span>
+                </div>
+                <div class="mini-stat">
+                  <span>Staff</span>
+                  <div class="track"><div class="fill" style="--value:${stats.staff.value}%; --bar-color:${stats.staff.color}"></div></div>
+                  <span>${stats.staff.label}</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
       function setInitialScores() {
         beforeScore.textContent = score(state.metrics);
         afterScore.textContent = "--";
         gainScore.textContent = "--";
         renderSignals();
         renderBars();
+        renderAvailability();
       }
 
       function cardHTML(name, color, icon, body, list = []) {
